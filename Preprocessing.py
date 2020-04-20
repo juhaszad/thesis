@@ -57,6 +57,9 @@ plt.imshow(img)
 img_normed=(img-img.mean())/img.std()
 
 # %%
+max(img.ravel())
+
+# %%
 plt.figure(figsize=(15,6))
 plt.subplot(121)
 plt.hist(img.ravel(), bins=256, range=(-20.0, 250.0))
@@ -91,41 +94,46 @@ plt.imshow(edges)
 filepath="./Data/training_set/"
 
 # %%
+height=432
+width=640
+set_size=int(len(os.listdir(filepath))/2)
+
+# %%
 filenames= os.listdir(filepath)
 filenames.sort()
 filenames
 
 # %%
-elso=os.listdir(filepath)[0]
-elso[-14:]
+first=os.listdir(filepath)[0]
+first[-14:]
 
 # %%
-masodik=os.listdir(filepath)[2]
-masodik[-6:]
+second=os.listdir(filepath)[2]
+second[-6:]
 
 # %%
-np.zeros((999,432,640,1))[0].shape
+np.zeros((set_size,height,width,1)).shape
 
 
 # %%
 def make_training_set(filepath):
     filenames = os.listdir(filepath)
     filenames.sort()
-    X_train = np.zeros((999,432,640,1))
-    y_train = np.zeros((999,432,640,1))
+    X_train = np.zeros((set_size,height,width,1), dtype='float32')
+    y_train = np.zeros((set_size,height,width,1), dtype='float32')
     index_X = 0
     index_y = 0
     for filename in filenames:
         if filename[-6:]=='HC.png':
             X = cv.imread(filepath+filename, 0)
             X = (X-X.mean())/X.std()
-            X = cv.resize(X, (640,432))
+            X = cv.resize(X, (width,height))
             X = np.expand_dims(X, axis=2)
             X_train[index_X] = X
             index_X+=1
         elif filename[-14:]=='Annotation.png':
             y = cv.imread(filepath+filename, 0)
-            y = cv.resize(y, (640,432))
+            y = cv.resize(y, (width,height))
             y = np.expand_dims(y, axis=2)
             y_train[index_y] = y
             index_y+=1
@@ -145,11 +153,41 @@ X_train[0].shape
 len(y_train)
 
 # %%
+uniq_X=np.unique(X_train)
+
+# %%
+uniq_y=np.unique(y_train)
+
+# %%
 plt.subplot(121)
 plt.imshow(np.squeeze(X_train[153], axis=2))
 plt.subplot(122)
 plt.imshow(np.squeeze(y_train[153], axis=2))
 plt.show()
+
+# %%
+print("X_train")
+print("dtype: "+str(X_train.dtype))
+print("size: "+str(X_train.size))
+print("shape: "+str(X_train.shape))
+print("min: "+str(X_train.min()))
+print("max: "+str(X_train.max()))
+print("mean: "+str(X_train.mean()))
+print("std: "+str(X_train.std()))
+print("len(np.unique): "+str(len(uniq_X)))
+print("np.unique: "+str(uniq_X))
+
+# %%
+print("y_train")
+print("dtype: "+str(y_train.dtype))
+print("size: "+str(y_train.size))
+print("shape: "+str(y_train.shape))
+print("min: "+str(y_train.min()))
+print("max: "+str(y_train.max()))
+print("mean: "+str(y_train.mean()))
+print("std: "+str(y_train.std()))
+print("len(np.unique): "+str(len(uniq_y)))
+print("np.unique: "+str(uniq_y))
 
 # %% [markdown]
 # ## Writing the data into files

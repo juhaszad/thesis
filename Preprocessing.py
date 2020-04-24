@@ -126,14 +126,15 @@ def make_training_set(filepath):
     for filename in filenames:
         if filename[-6:]=='HC.png':
             X = cv.imread(filepath+filename, 0)
-            X = (X-X.mean())/X.std()
             X = cv.resize(X, (width,height))
+            X = (X-X.mean())/X.std()
             X = np.expand_dims(X, axis=2)
             X_train[index_X] = X
             index_X+=1
         elif filename[-14:]=='Annotation.png':
             y = cv.imread(filepath+filename, 0)
-            y = cv.resize(y, (width,height))
+            y = y/255
+            y = cv.resize(y, (width,height), interpolation=cv.INTER_NEAREST)
             y = np.expand_dims(y, axis=2)
             y_train[index_y] = y
             index_y+=1
@@ -175,7 +176,7 @@ print("max: "+str(X_train.max()))
 print("mean: "+str(X_train.mean()))
 print("std: "+str(X_train.std()))
 print("len(np.unique): "+str(len(uniq_X)))
-print("np.unique: "+str(uniq_X))
+print("np.unique: ", uniq_X)
 
 # %%
 print("y_train")

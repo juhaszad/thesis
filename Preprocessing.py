@@ -91,11 +91,11 @@ plt.imshow(edges)
 # ## Reading all data
 
 # %%
-filepath="./Data/training_set/"
+filepath="./Data/"
 
 # %%
-height=432
-width=640
+height=216 #432
+width=320 #640
 set_size=int(len(os.listdir(filepath))/2)
 
 # %%
@@ -127,7 +127,7 @@ def make_training_set(filepath):
         if filename[-6:]=='HC.png':
             X = cv.imread(filepath+filename, 0)
             X = cv.resize(X, (width,height))
-            X = (X-X.mean())/X.std()
+            #X = (X-X.mean())/X.std()
             X = np.expand_dims(X, axis=2)
             X_train[index_X] = X
             index_X+=1
@@ -155,6 +155,10 @@ len(y_train)
 
 # %%
 uniq_X=np.unique(X_train)
+
+# %%
+print("len(np.unique): "+str(len(uniq_X)))
+print("np.unique: ", uniq_X)
 
 # %%
 uniq_y=np.unique(y_train)
@@ -198,3 +202,5 @@ np.save('X_train', X_train)
 
 # %%
 np.save('y_train', y_train)
+
+# %%

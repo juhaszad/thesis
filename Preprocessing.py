@@ -24,95 +24,20 @@ import matplotlib.pyplot as plt
 import os
 
 # %% [markdown]
-# ## Experimenting, getting to know the data
-
-# %%
-filepath="./Data/training_set/"
-
-# %%
-filename="010_HC.png"
-
-# %%
-img=cv.imread(filepath+filename, 0)
-
-# %%
-new_img=np.expand_dims(img, axis=2)
-
-# %%
-new_img.shape
-
-# %%
-res=cv.resize(new_img,(640,432))
-
-# %%
-res=np.expand_dims(res, axis=2)
-
-# %%
-res.shape
-
-# %%
-plt.imshow(img)
-
-# %%
-img_normed=(img-img.mean())/img.std()
-
-# %%
-max(img.ravel())
-
-# %%
-plt.figure(figsize=(15,6))
-plt.subplot(121)
-plt.hist(img.ravel(), bins=256, range=(-20.0, 250.0))
-plt.title("Eredeti")
-plt.subplot(122)
-plt.hist(img_normed.ravel(), bins=256, range=(-10.0, 10.0))
-plt.title("Normalizált")
-plt.show()
-
-# %%
-img_normed.shape
-
-# %%
-resized=cv.resize(img_normed, (640,432))
-
-# %%
-resized.shape
-
-# %%
-plt.imshow(resized)
-
-# %%
-edges=cv.Canny(img, 20, 20)
-
-# %%
-plt.imshow(edges)
-
-# %% [markdown]
 # ## Reading all data
 
 # %%
 filepath="./Data/"
 
 # %%
-height=216 #432
-width=320 #640
+height=432
+width=640
 set_size=int(len(os.listdir(filepath))/2)
 
 # %%
 filenames= os.listdir(filepath)
 filenames.sort()
 filenames
-
-# %%
-first=os.listdir(filepath)[0]
-first[-14:]
-
-# %%
-second=os.listdir(filepath)[2]
-second[-6:]
-
-# %%
-np.zeros((set_size,height,width,1)).shape
 
 
 # %%
@@ -127,7 +52,6 @@ def make_training_set(filepath):
         if filename[-6:]=='HC.png':
             X = cv.imread(filepath+filename, 0)
             X = cv.resize(X, (width,height))
-            #X = (X-X.mean())/X.std()
             X = np.expand_dims(X, axis=2)
             X_train[index_X] = X
             index_X+=1
@@ -136,29 +60,29 @@ def make_training_set(filepath):
             y = y/255
             y = cv.resize(y, (width,height), interpolation=cv.INTER_NEAREST)
             y = np.expand_dims(y, axis=2)
+            mask = np.zeros((height+2, width+2), np.uint8)
+            cv.floodFill(np.uint8(y), mask, (0,0), 1)
+            inverted = cv.bitwise_not(mask)
+            inverted = inverted-254
+            im_out = inverted[1:height+1,1:width+1]
+            y=np.float32(im_out)
+            y = np.expand_dims(y, axis=2)
             y_train[index_y] = y
             index_y+=1
     return (X_train, y_train)
 
 
+# %% [markdown]
+# Make training set
+
 # %%
 X_train, y_train = make_training_set(filepath)
 
-# %%
-len(X_train)
-
-# %%
-X_train[0].shape
-
-# %%
-len(y_train)
+# %% [markdown]
+# Examine made training sets
 
 # %%
 uniq_X=np.unique(X_train)
-
-# %%
-print("len(np.unique): "+str(len(uniq_X)))
-print("np.unique: ", uniq_X)
 
 # %%
 uniq_y=np.unique(y_train)

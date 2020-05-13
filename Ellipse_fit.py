@@ -21,6 +21,7 @@ import numpy as np
 import cv2 as cv
 import matplotlib.pyplot as plt
 import pandas as pd
+from scipy import special
 
 # %%
 predictions = np.load('./Predictions.npy')
@@ -90,6 +91,15 @@ def calc_HC(a,b,pixel_size):
 
 
 # %%
+def calc_HC_with_integral(a,b,pixel_size):
+    a=a*1.25*pixel_size*0.5
+    b=b*1.25*pixel_size*0.5
+    e_sq = 1.0-b**2/a**2
+    HC = 4*a*special.ellipe(e_sq)
+    return HC
+
+
+# %%
 def get_pixel_size(filename):
     return float(properties[properties['filename']==str(filename)]['pixel size(mm)'])
 
@@ -113,7 +123,7 @@ def EllipseFit():
             if e[1][1]>b:
                 b=e[1][1]
         pixel_size = get_pixel_size(pred_names[i])
-        HC = calc_HC(a,b,pixel_size)
+        HC = calc_HC_with_integral(a,b,pixel_size)
         d[pred_names[i]]=HC
     return d
 

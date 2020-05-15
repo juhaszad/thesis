@@ -27,7 +27,7 @@ import matplotlib.pyplot as plt
 from tensorflow import keras
 
 # %%
-run_name = 'harmadik_modell_v3'
+run_name = 'fixed_train_set_modell_v3'
 log_dir = os.path.normpath(os.path.join('./Tensorboard/',run_name))
 
 # %%
@@ -36,9 +36,10 @@ filepath="./"
 # %%
 X = np.load(filepath + "X_train.npy")
 y = np.load(filepath + "y_train.npy")
+names = np.load(filepath + "names.npy")
 
 # %%
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+X_train, X_test, y_train, y_test, train_index, test_index = train_test_split(X, y, names, test_size=0.2)
 
 # %%
 mean = X_train.mean()
@@ -47,6 +48,39 @@ std = X_train.std()
 # %%
 X_train = (X_train-mean)/std
 X_test = (X_test-mean)/std
+
+# %%
+np.save('fixed_X_train', X_train)
+np.save("fixed_y_train", y_train)
+np.save("fixed_X_test", X_test)
+np.save("fixed_y_test", y_test)
+np.save("fixed_train_names", train_index)
+np.save("fixed_test_names", test_index)
+
+# %%
+X_train = np.load('fixed_X_train.npy')
+y_train = np.load('fixed_y_train.npy')
+X_test = np.load('fixed_X_test.npy')
+y_test = np.load('fixed_y_test.npy')
+train_index = np.load('fixed_train_names.npy')
+test_index = np.load('fixed_test_names.npy')
+
+# %%
+plt.subplot(121)
+plt.imshow(np.squeeze(X_train[62], axis=2))
+plt.subplot(122)
+plt.imshow(np.squeeze(y_train[62], axis=2))
+plt.show()
+plt.subplot(121)
+plt.imshow(np.squeeze(X_train[0], axis=2))
+plt.subplot(122)
+plt.imshow(np.squeeze(y_train[0], axis=2))
+plt.show()
+plt.subplot(121)
+plt.imshow(np.squeeze(X_train[700], axis=2))
+plt.subplot(122)
+plt.imshow(np.squeeze(y_train[700], axis=2))
+plt.show()
 
 # %%
 del X, y
@@ -134,31 +168,45 @@ model = unet_model()
 tensorboard_callback = keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1, update_freq='epoch')
 
 # %%
-model.compile(optimizer = keras.optimizers.Adam(lr = 4e-3), loss = dice_loss, metrics = ['accuracy', dice])
+model.compile(optimizer = keras.optimizers.Adam(lr = 1e-2), loss = keras.losses.binary_crossentropy, metrics = ['accuracy', dice])
 
 # %%
 model.fit(X_train, y_train, epochs = 50, batch_size=1, callbacks=[tensorboard_callback])
 
 # %%
+model2 = keras.models.load_model('./Model_lr_bigger.h5', custom_objects={'dice': dice})
+
+# %%
+del X_train, y_train, y_test
+
+# %%
 prediction = model.predict(X_test, batch_size=1)
 
 # %%
+np.save('Predictions', prediction)
+np.save('test_names', test_index)
+
+# %%
 plt.subplot(121)
+plt.title(str(test_index[93]))
 plt.imshow(np.squeeze(X_test[93], axis=2))
 plt.subplot(122)
 plt.imshow(np.squeeze(prediction[93], axis=2))
 plt.show()
 plt.subplot(121)
+plt.title(str(test_index[0]))
 plt.imshow(np.squeeze(X_test[0], axis=2))
 plt.subplot(122)
 plt.imshow(np.squeeze(prediction[0], axis=2))
 plt.show()
 plt.subplot(121)
+plt.title(str(test_index[103]))
 plt.imshow(np.squeeze(X_test[103], axis=2))
 plt.subplot(122)
 plt.imshow(np.squeeze(prediction[103], axis=2))
 plt.show()
 plt.subplot(121)
+plt.title(str(test_index[62]))
 plt.imshow(np.squeeze(X_test[62], axis=2))
 plt.subplot(122)
 plt.imshow(np.squeeze(prediction[62], axis=2))

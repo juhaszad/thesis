@@ -25,9 +25,10 @@ from sklearn.metrics import confusion_matrix, roc_curve
 import seaborn as sns
 import matplotlib.pyplot as plt
 from tensorflow import keras
+import tensorflow as tf
 
 # %%
-run_name = 'fixed_train_set_modell_v3'
+run_name = 'original_masks_model'
 log_dir = os.path.normpath(os.path.join('./Tensorboard/',run_name))
 
 # %%
@@ -38,8 +39,19 @@ X = np.load(filepath + "X_train.npy")
 y = np.load(filepath + "y_train.npy")
 names = np.load(filepath + "names.npy")
 
+# %% [markdown]
+# Use original masks
+
+# %%
+X = np.load(filepath + "X_train.npy")
+y = np.load(filepath + "y_train_original.npy")
+names = np.load(filepath + "names.npy")
+
 # %%
 X_train, X_test, y_train, y_test, train_index, test_index = train_test_split(X, y, names, test_size=0.2)
+
+# %% [markdown]
+# Standardization
 
 # %%
 mean = X_train.mean()
@@ -48,6 +60,17 @@ std = X_train.std()
 # %%
 X_train = (X_train-mean)/std
 X_test = (X_test-mean)/std
+
+# %% [markdown]
+# Normalization
+
+# %%
+maximum = X_train.max()
+minimum = X_train.min()
+
+# %%
+X_train = (X_train-minimum)/(maximum-minimum)
+X_test = (X_test-minimum)/(maximum-minimum)
 
 # %%
 np.save('fixed_X_train', X_train)
@@ -64,6 +87,19 @@ X_test = np.load('fixed_X_test.npy')
 y_test = np.load('fixed_y_test.npy')
 train_index = np.load('fixed_train_names.npy')
 test_index = np.load('fixed_test_names.npy')
+
+# %%
+plt.hist(np.log(X_train.ravel()+1))
+
+# %%
+log_X_train = np.log(X_train+1)
+log_X_test = np.log(X_test+1)
+
+# %%
+plt.subplot(121)
+plt.imshow(np.squeeze(log_X_train[62], axis=2))
+plt.subplot(122)
+plt.imshow(np.squeeze(y_train[62], axis=2))
 
 # %%
 plt.subplot(121)
@@ -162,16 +198,51 @@ def dice_loss(y_true,y_pred):
 
 
 # %%
+class binary_crossentropy:
+    def __init__(self, w):
+        self.w=w
+        self.name="custom_loss"
+    def __call__(self, y_true, y_pred, sample_weight=None):
+        y_pred=tf.clip_by_value(y_pred, keras.backend.epsilon(), 1-keras.backend.epsilon())
+        loss=tf.math.reduce_mean((-1)*(self.w*y_true*tf.math.log(y_pred)+(1-y_true)*tf.math.log(1-y_pred)))
+        return loss
+
+
+# %%
+class new_custom_loss:
+    def __init__(self, w):
+        self.w=w
+        self.name="new_custom_loss"
+    def __call__(self, y_true, y_pred, sample_weight=None):
+        FP = tf.math.count_nonzero(y_pred * (y_true - 1))
+        FN = tf.math.count_nonzero((y_pred - 1) * y_true)
+        size = tf.size(y_true, out_type=tf.dtypes.int64, name=None)
+        return tf.math.divide(keras.backend.sum(FP, tf.math.scalar_mul(self.w, FN)),size)
+
+
+# %%
+custom_loss = binary_crossentropy(10)
+
+# %%
+cl = new_custom_loss(10)
+
+# %%
+del model
+
+# %%
 model = unet_model()
 
 # %%
 tensorboard_callback = keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1, update_freq='epoch')
+lr = keras.callbacks.ReduceLROnPlateau(
+    monitor='loss', factor=0.1, patience=10, verbose=0, mode='auto',
+    min_delta=0.0001, cooldown=0, min_lr=0)
 
 # %%
-model.compile(optimizer = keras.optimizers.Adam(lr = 1e-2), loss = keras.losses.binary_crossentropy, metrics = ['accuracy', dice])
+model.compile(optimizer = keras.optimizers.Adam(lr = 1e-2), loss = custom_loss, metrics = ['accuracy', dice])
 
 # %%
-model.fit(X_train, y_train, epochs = 50, batch_size=1, callbacks=[tensorboard_callback])
+model.fit(X_train, y_train, epochs = 50, batch_size=1, callbacks=[tensorboard_callback, lr])
 
 # %%
 model2 = keras.models.load_model('./Model_lr_bigger.h5', custom_objects={'dice': dice})
@@ -239,10 +310,10 @@ plt.plot(fpr,tpr)
 model.evaluate(X_test, y_test, batch_size=1)
 
 # %%
-model.save('Model_lr_bigger.h5')
+model.save('Model_fixed_log.h5')
 
 # %%
-model.save_weights('Weights_lr_bigger.h5')
+model.save_weights('Weights_fixed_log.h5')
 
 
 # %%

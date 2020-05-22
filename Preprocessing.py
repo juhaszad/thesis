@@ -7,7 +7,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.4.2
+#       jupytext_version: 1.3.4
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -27,7 +27,7 @@ import os
 # ## Reading all data
 
 # %%
-filepath="./Data/"
+filepath="/net/home/david/adel/training_set/"
 
 # %%
 height=432
@@ -72,20 +72,8 @@ def make_training_set(filepath):
     return (X_train, y_train)
 
 
-# %% [markdown]
-# Make training set
-
 # %%
 X_train, y_train = make_training_set(filepath)
-
-# %% [markdown]
-# Examine made training sets
-
-# %%
-uniq_X=np.unique(X_train)
-
-# %%
-uniq_y=np.unique(y_train)
 
 # %%
 plt.subplot(121)
@@ -95,36 +83,7 @@ plt.imshow(np.squeeze(y_train[153], axis=2))
 plt.show()
 
 # %%
-print("X_train")
-print("dtype: "+str(X_train.dtype))
-print("size: "+str(X_train.size))
-print("shape: "+str(X_train.shape))
-print("min: "+str(X_train.min()))
-print("max: "+str(X_train.max()))
-print("mean: "+str(X_train.mean()))
-print("std: "+str(X_train.std()))
-print("len(np.unique): "+str(len(uniq_X)))
-print("np.unique: ", uniq_X)
+np.save('/net/home/david/adel/X_train', X_train)
 
 # %%
-print("y_train")
-print("dtype: "+str(y_train.dtype))
-print("size: "+str(y_train.size))
-print("shape: "+str(y_train.shape))
-print("min: "+str(y_train.min()))
-print("max: "+str(y_train.max()))
-print("mean: "+str(y_train.mean()))
-print("std: "+str(y_train.std()))
-print("len(np.unique): "+str(len(uniq_y)))
-print("np.unique: "+str(uniq_y))
-
-# %% [markdown]
-# ## Writing the data into files
-
-# %%
-np.save('X_train', X_train)
-
-# %%
-np.save('y_train', y_train)
-
-# %%
+np.save('/net/home/david/adel/y_train', y_train)

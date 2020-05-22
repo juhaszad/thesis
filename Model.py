@@ -7,7 +7,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.4.2
+#       jupytext_version: 1.3.4
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -28,78 +28,18 @@ from tensorflow import keras
 import tensorflow as tf
 
 # %%
-run_name = 'original_masks_model'
-log_dir = os.path.normpath(os.path.join('./Tensorboard/',run_name))
+run_name = 'a'
+log_dir = os.path.normpath(os.path.join('/net/home/david/adel/tensorboard/',run_name))
 
 # %%
-filepath="./"
+filepath="/net/home/david/adel/"
 
 # %%
 X = np.load(filepath + "X_train.npy")
 y = np.load(filepath + "y_train.npy")
-names = np.load(filepath + "names.npy")
-
-# %% [markdown]
-# Use original masks
 
 # %%
-X = np.load(filepath + "X_train.npy")
-y = np.load(filepath + "y_train_original.npy")
-names = np.load(filepath + "names.npy")
-
-# %%
-X_train, X_test, y_train, y_test, train_index, test_index = train_test_split(X, y, names, test_size=0.2)
-
-# %% [markdown]
-# Standardization
-
-# %%
-mean = X_train.mean()
-std = X_train.std()
-
-# %%
-X_train = (X_train-mean)/std
-X_test = (X_test-mean)/std
-
-# %% [markdown]
-# Normalization
-
-# %%
-maximum = X_train.max()
-minimum = X_train.min()
-
-# %%
-X_train = (X_train-minimum)/(maximum-minimum)
-X_test = (X_test-minimum)/(maximum-minimum)
-
-# %%
-np.save('fixed_X_train', X_train)
-np.save("fixed_y_train", y_train)
-np.save("fixed_X_test", X_test)
-np.save("fixed_y_test", y_test)
-np.save("fixed_train_names", train_index)
-np.save("fixed_test_names", test_index)
-
-# %%
-X_train = np.load('fixed_X_train.npy')
-y_train = np.load('fixed_y_train.npy')
-X_test = np.load('fixed_X_test.npy')
-y_test = np.load('fixed_y_test.npy')
-train_index = np.load('fixed_train_names.npy')
-test_index = np.load('fixed_test_names.npy')
-
-# %%
-plt.hist(np.log(X_train.ravel()+1))
-
-# %%
-log_X_train = np.log(X_train+1)
-log_X_test = np.log(X_test+1)
-
-# %%
-plt.subplot(121)
-plt.imshow(np.squeeze(log_X_train[62], axis=2))
-plt.subplot(122)
-plt.imshow(np.squeeze(y_train[62], axis=2))
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 
 # %%
 plt.subplot(121)
@@ -107,19 +47,6 @@ plt.imshow(np.squeeze(X_train[62], axis=2))
 plt.subplot(122)
 plt.imshow(np.squeeze(y_train[62], axis=2))
 plt.show()
-plt.subplot(121)
-plt.imshow(np.squeeze(X_train[0], axis=2))
-plt.subplot(122)
-plt.imshow(np.squeeze(y_train[0], axis=2))
-plt.show()
-plt.subplot(121)
-plt.imshow(np.squeeze(X_train[700], axis=2))
-plt.subplot(122)
-plt.imshow(np.squeeze(y_train[700], axis=2))
-plt.show()
-
-# %%
-del X, y
 
 
 # %%
@@ -186,22 +113,10 @@ def unet_model(input_size = (432,640,1)):
 
 
 # %%
-def dice(y_true, y_pred):
-    TP = keras.backend.sum(y_true*y_pred)
-    FP_FN = keras.backend.sum(keras.backend.abs(y_true-y_pred))
-    return 2*TP/(2*TP+FP_FN)
-
-
-# %%
-def dice_loss(y_true,y_pred):
-    return 1-dice(y_true,y_pred)
-
-
-# %%
 class binary_crossentropy:
     def __init__(self, w):
         self.w=w
-        self.name="custom_loss"
+        self.__name__="custom_loss"
     def __call__(self, y_true, y_pred, sample_weight=None):
         y_pred=tf.clip_by_value(y_pred, keras.backend.epsilon(), 1-keras.backend.epsilon())
         loss=tf.math.reduce_mean((-1)*(self.w*y_true*tf.math.log(y_pred)+(1-y_true)*tf.math.log(1-y_pred)))
@@ -209,135 +124,28 @@ class binary_crossentropy:
 
 
 # %%
-class new_custom_loss:
-    def __init__(self, w):
-        self.w=w
-        self.name="new_custom_loss"
-    def __call__(self, y_true, y_pred, sample_weight=None):
-        FP = tf.math.count_nonzero(y_pred * (y_true - 1))
-        FN = tf.math.count_nonzero((y_pred - 1) * y_true)
-        size = tf.size(y_true, out_type=tf.dtypes.int64, name=None)
-        return tf.math.divide(keras.backend.sum(FP, tf.math.scalar_mul(self.w, FN)),size)
-
-
-# %%
-custom_loss = binary_crossentropy(10)
-
-# %%
-cl = new_custom_loss(10)
-
-# %%
-del model
+print(y_train.sum() / y_train.size)
 
 # %%
 model = unet_model()
 
 # %%
 tensorboard_callback = keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1, update_freq='epoch')
-lr = keras.callbacks.ReduceLROnPlateau(
-    monitor='loss', factor=0.1, patience=10, verbose=0, mode='auto',
-    min_delta=0.0001, cooldown=0, min_lr=0)
 
 # %%
-model.compile(optimizer = keras.optimizers.Adam(lr = 1e-2), loss = custom_loss, metrics = ['accuracy', dice])
+model.compile(optimizer = keras.optimizers.Adam(), loss = binary_crossentropy(3.3/3.0), metrics = ['accuracy'])
 
 # %%
-model.fit(X_train, y_train, epochs = 50, batch_size=1, callbacks=[tensorboard_callback, lr])
+model.fit(X_train, y_train, epochs = 50, batch_size=8,callbacks=[tensorboard_callback])
 
 # %%
-model2 = keras.models.load_model('./Model_lr_bigger.h5', custom_objects={'dice': dice})
-
-# %%
-del X_train, y_train, y_test
-
-# %%
-prediction = model.predict(X_test, batch_size=1)
-
-# %%
-np.save('Predictions', prediction)
-np.save('test_names', test_index)
+prediction = model.predict(X_test[133:134, :, :, 0], batch_size=1)
 
 # %%
 plt.subplot(121)
-plt.title(str(test_index[93]))
-plt.imshow(np.squeeze(X_test[93], axis=2))
+plt.imshow(X_test[133, :, :, 0])
 plt.subplot(122)
-plt.imshow(np.squeeze(prediction[93], axis=2))
+plt.imshow(prediction[0, :, :, 0])
 plt.show()
-plt.subplot(121)
-plt.title(str(test_index[0]))
-plt.imshow(np.squeeze(X_test[0], axis=2))
-plt.subplot(122)
-plt.imshow(np.squeeze(prediction[0], axis=2))
-plt.show()
-plt.subplot(121)
-plt.title(str(test_index[103]))
-plt.imshow(np.squeeze(X_test[103], axis=2))
-plt.subplot(122)
-plt.imshow(np.squeeze(prediction[103], axis=2))
-plt.show()
-plt.subplot(121)
-plt.title(str(test_index[62]))
-plt.imshow(np.squeeze(X_test[62], axis=2))
-plt.subplot(122)
-plt.imshow(np.squeeze(prediction[62], axis=2))
-plt.show()
-
-# %%
-prediction[prediction>=0.5]=1
-prediction[prediction<0.5]=0
-
-# %%
-cm=confusion_matrix(y_test.ravel(), prediction.ravel())
-
-# %%
-cm
-
-# %%
-cmn = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
-
-# %%
-annot_kws = {"ha": 'left',"va": 'top'}
-ax = sns.heatmap(cmn, annot=True, annot_kws=annot_kws, cmap=plt.cm.Blues, fmt='.4f')
-
-# %%
-fpr, tpr, thresholds = roc_curve(y_test.ravel(), prediction.ravel())
-
-# %%
-plt.plot(fpr,tpr)
-
-# %%
-model.evaluate(X_test, y_test, batch_size=1)
-
-# %%
-model.save('Model_fixed_log.h5')
-
-# %%
-model.save_weights('Weights_fixed_log.h5')
-
-
-# %%
-def TP(y_true, y_pred):
-    return np.sum(np.around(y_pred)* y_true)
-
-
-def TN(y_true, y_pred):
-    return np.sum((np.around(y_pred) + y_true ) == 0)
-
-
-def FP(y_true, y_pred):
-    return np.sum(np.around(y_pred) - y_true)
-
-
-def FN(y_true, y_pred):
-    return np.sum((y_true - np.around(y_pred)) == 1)
-
-
-def Specificity(y_true, y_pred):
-    return TN(y_true, y_pred) / (np.sum(1 - np.around(y_pred)) + keras.backend.epsilon())
-
-
-def Sensitivity(y_true, y_pred):
-    return TP(y_true, y_pred) / (np.sum(np.around(y_pred)) + keras.backend.epsilon())
 
 # %%

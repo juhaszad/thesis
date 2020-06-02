@@ -17,6 +17,9 @@
 # %% [markdown]
 # # Data preprocessing
 
+# %% [markdown]
+# ## Import packages
+
 # %%
 import cv2 as cv
 import numpy as np
@@ -44,6 +47,7 @@ filenames
 def make_training_set(filepath):
     filenames = os.listdir(filepath)
     filenames.sort()
+    names = []
     X_train = np.zeros((set_size,height,width,1), dtype='float32')
     y_train = np.zeros((set_size,height,width,1), dtype='float32')
     index_X = 0
@@ -54,6 +58,7 @@ def make_training_set(filepath):
             X = cv.resize(X, (width,height))
             X = np.expand_dims(X, axis=2)
             X_train[index_X] = X
+            names.append(filename)
             index_X+=1
         elif filename[-14:]=='Annotation.png':
             y = cv.imread(filepath+filename, 0)
@@ -69,30 +74,23 @@ def make_training_set(filepath):
             y = np.expand_dims(y, axis=2)
             y_train[index_y] = y
             index_y+=1
-    return (X_train, y_train)
+    return (X_train, y_train, names)
 
 
 # %% [markdown]
-# Make training set
+# ## Make training set
 
 # %%
-X_train, y_train = make_training_set(filepath)
+X_train, y_train, names = make_training_set(filepath)
 
 # %% [markdown]
-# Examine made training sets
+# ## Check the made training sets
 
 # %%
 uniq_X=np.unique(X_train)
 
 # %%
 uniq_y=np.unique(y_train)
-
-# %%
-plt.subplot(121)
-plt.imshow(np.squeeze(X_train[153], axis=2))
-plt.subplot(122)
-plt.imshow(np.squeeze(y_train[153], axis=2))
-plt.show()
 
 # %%
 print("X_train")
@@ -119,6 +117,17 @@ print("len(np.unique): "+str(len(uniq_y)))
 print("np.unique: "+str(uniq_y))
 
 # %% [markdown]
+# ### Plotting an example image
+
+# %%
+plt.subplot(121)
+plt.title(names[153])
+plt.imshow(np.squeeze(X_train[153], axis=2))
+plt.subplot(122)
+plt.imshow(np.squeeze(y_train[153], axis=2))
+plt.show()
+
+# %% [markdown]
 # ## Writing the data into files
 
 # %%
@@ -128,3 +137,4 @@ np.save('X_train', X_train)
 np.save('y_train', y_train)
 
 # %%
+np.save('names', names)

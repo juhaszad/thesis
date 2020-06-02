@@ -16,6 +16,9 @@
 # %% [markdown]
 # # Ellipse fit
 
+# %% [markdown]
+# ## Import packages
+
 # %%
 import numpy as np
 import cv2 as cv
@@ -23,64 +26,21 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from scipy import special
 
+# %% [markdown]
+# ## Load the data
+
 # %%
-predictions = np.load('./Predictions.npy')
-pred_names = np.load('./test_names.npy')
+predictions = np.load('./Prediction_with_bce_2params.npy')
+
+# %%
+pred_names = np.load('./fixed_test_names.npy')
 
 # %%
 properties = pd.read_csv('./training_set_pixel_size_and_HC.csv')
 
-# %%
-properties.head()
-
-# %%
-float(properties[properties['filename']=='000_HC.png']['pixel size(mm)'])
-
-# %%
-trial = predictions[0].copy()
-
-# %%
-plt.imshow(np.squeeze(trial, axis=2))
-
-# %%
-trial = np.squeeze(trial, axis=2)
-
-# %%
-trial[trial<0.5]=0
-trial[trial>=0.5]=1
-trial = np.uint8(trial)
-
-# %%
-img, contours, _ = cv.findContours(trial, mode=cv.RETR_LIST, method=cv.CHAIN_APPROX_NONE)
-
-# %%
-plt.imshow(img)
-
-# %%
-canvas = np.zeros_like(img)
-cv.drawContours(canvas , contours, -1, (255, 255, 255), 3)
-
-plt.imshow(canvas)
-
-# %%
-for i, contour in enumerate(contours):
-    e = cv.fitEllipse(contour)
-
-# %%
-conts = filter(lambda x: len(x) >= 40, contours)
-ellipses = list(map(cv.fitEllipse, conts)) 
-
-# %%
-ellipses
-
-# %%
-canvas = np.zeros_like(img)
-cv.ellipse(canvas, ellipses[0], (255, 0, 0), 3)
-plt.imshow(canvas)
-
 
 # %% [markdown]
-# # Ellipse fit, calculations
+# ## Define functions for the calculations
 
 # %%
 def calc_HC(a,b,pixel_size):
@@ -103,6 +63,9 @@ def calc_HC_with_integral(a,b,pixel_size):
 def get_pixel_size(filename):
     return float(properties[properties['filename']==str(filename)]['pixel size(mm)'])
 
+
+# %% [markdown]
+# ## Ellipse fitting and calculation of the HC
 
 # %%
 def EllipseFit():
@@ -131,15 +94,9 @@ def EllipseFit():
 # %%
 d = EllipseFit()
 
+
 # %% [markdown]
-# # Calculating the difference
-
-# %%
-d
-
-# %%
-float(properties[properties['filename']=='494_HC.png']['head circumference (mm)'])
-
+# ## Calculating the difference
 
 # %%
 def pd_to_dict(df):
@@ -167,5 +124,3 @@ MADF = mean_absolute_difference()
 
 # %%
 MADF
-
-# %%

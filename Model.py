@@ -22,7 +22,6 @@
 
 # %%
 import numpy as np
-from sklearn.model_selection import train_test_split
 import os
 from sklearn.metrics import confusion_matrix, roc_curve, auc
 import seaborn as sns
@@ -38,60 +37,7 @@ run_name = 'bce_two_params'
 log_dir = os.path.normpath(os.path.join('./Tensorboard/',run_name))
 
 # %% [markdown]
-# ## Load the data
-
-# %%
-filepath="./"
-
-# %%
-X = np.load(filepath + "X_train.npy")
-y = np.load(filepath + "y_train.npy")
-names = np.load(filepath + "names.npy")
-
-# %% [markdown]
-# ### Splitting the data into train and test set
-
-# %%
-X_train, X_test, y_train, y_test, train_index, test_index = train_test_split(X, y, names, test_size=0.2)
-
-# %%
-del X, y
-
-# %% [markdown]
-# #### Standardization
-
-# %%
-mean = X_train.mean()
-std = X_train.std()
-
-# %%
-X_train = (X_train-mean)/std
-X_test = (X_test-mean)/std
-
-# %% [markdown]
-# Normalization (if no standardization)
-
-# %%
-maximum = X_train.max()
-minimum = X_train.min()
-
-# %%
-X_train = (X_train-minimum)/(maximum-minimum)
-X_test = (X_test-minimum)/(maximum-minimum)
-
-# %% [markdown]
-# ### Fixing the splitted sets for later use
-
-# %%
-np.save('fixed_X_train_new', X_train)
-np.save("fixed_y_train_new", y_train)
-np.save("fixed_X_test_new", X_test)
-np.save("fixed_y_test_new", y_test)
-np.save("fixed_train_names_new", train_index)
-np.save("fixed_test_names_new", test_index)
-
-# %% [markdown]
-# ## Loading the fixed data
+# ## Load the (fixed) data
 
 # %%
 X_train = np.load('fixed_X_train.npy')
@@ -101,25 +47,23 @@ y_test = np.load('fixed_y_test.npy')
 train_index = np.load('fixed_train_names.npy')
 test_index = np.load('fixed_test_names.npy')
 
+
 # %% [markdown]
 # ### Plotting some images
 
 # %%
-plt.subplot(121)
-plt.imshow(np.squeeze(X_train[62], axis=2))
-plt.subplot(122)
-plt.imshow(np.squeeze(y_train[62], axis=2))
-plt.show()
-plt.subplot(121)
-plt.imshow(np.squeeze(X_train[0], axis=2))
-plt.subplot(122)
-plt.imshow(np.squeeze(y_train[0], axis=2))
-plt.show()
-plt.subplot(121)
-plt.imshow(np.squeeze(X_train[700], axis=2))
-plt.subplot(122)
-plt.imshow(np.squeeze(y_train[700], axis=2))
-plt.show()
+def plot(names, X_train, y_train, i):
+    plt.subplot(121)
+    plt.title(names[i])
+    plt.imshow(np.squeeze(X_train[i], axis=2))
+    plt.subplot(122)
+    plt.imshow(np.squeeze(y_train[i], axis=2))
+    plt.show()
+    pass
+
+
+# %%
+plot(names, X_train, y_train, 62)
 
 
 # %% [markdown]
@@ -219,11 +163,11 @@ class binary_crossentropy:
 
 
 # %%
-class new_custom_loss:
+class weighted_fn_fp:
     def __init__(self, w_FP, w_FN):
         self.w_FP=w_FP
         self.w_FN=w_FN
-        self.__name__="new_custom_loss"
+        self.__name__="weighted_fn_fp"
     def __call__(self, y_true, y_pred, sample_weight=None):
         FP = (y_pred * (1.0-y_true))
         FN = ((1.0-y_pred) * y_true)
@@ -241,7 +185,7 @@ model = unet_model()
 tensorboard_callback = keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1, update_freq='epoch')
 
 # %%
-model.compile(optimizer = keras.optimizers.Adam(), loss = binary_crossentropy(w_FP=0.3, w_FN=0.7), metrics = ['accuracy', dice])
+model.compile(optimizer = keras.optimizers.Adam(), loss = weighted_fn_fp(w_FP=0.3, w_FN=0.7), metrics = ['accuracy', dice])
 
 # %%
 model.fit(X_train, y_train, epochs = 50, batch_size=2, callbacks=[tensorboard_callback])
@@ -262,30 +206,8 @@ np.save('Prediction_with_bce_2params', prediction)
 # #### Plotting some of the predictions
 
 # %%
-plt.subplot(121)
-plt.title(str(test_index[130]))
-plt.imshow(np.squeeze(X_test[130], axis=2))
-plt.subplot(122)
-plt.imshow(np.squeeze(prediction[130], axis=2))
-plt.show()
-plt.subplot(121)
-plt.title(str(test_index[199]))
-plt.imshow(np.squeeze(X_test[199], axis=2))
-plt.subplot(122)
-plt.imshow(np.squeeze(prediction[199], axis=2))
-plt.show()
-plt.subplot(121)
-plt.title(str(test_index[67]))
-plt.imshow(np.squeeze(X_test[67], axis=2))
-plt.subplot(122)
-plt.imshow(np.squeeze(prediction[67], axis=2))
-plt.show()
-plt.subplot(121)
-plt.title(str(test_index[33]))
-plt.imshow(np.squeeze(X_test[33], axis=2))
-plt.subplot(122)
-plt.imshow(np.squeeze(prediction[33], axis=2))
-plt.show()
+plot(test_index, X_test, prediction, 130)
+plot(test_index, X_test, prediction, 199)
 
 # %% [markdown]
 # ## Evaluating the prediction
@@ -323,21 +245,27 @@ plt.show()
 
 # %%
 fpr, tpr, thresholds = roc_curve(y_test.ravel(), prediction.ravel())
-roc_auc = auc(fpr, tpr)
+
 
 # %%
-plt.figure()
-lw = 2
-plt.plot(fpr, tpr, color='darkorange',
-        lw=lw, label='ROC curve (area = %0.2f)' % roc_auc)
-plt.plot([0,1], [0,1], color='navy', lw=lw, linestyle='--')
-plt.xlim([0.0, 1.0])
-plt.ylim([0.0, 1.05])
-plt.xlabel('False Positive Rate')
-plt.ylabel('True Positive Rate')
-plt.title('ROC curve of the reduced model')
-plt.legend(loc="lower right")
-plt.show()
+def plot_roc_auc(fpr, tpr):
+    roc_auc = auc(fpr, tpr)
+    plt.figure()
+    lw = 2
+    plt.plot(fpr, tpr, color='darkorange',
+            lw=lw, label='ROC curve (area = %0.2f)' % roc_auc)
+    plt.plot([0,1], [0,1], color='navy', lw=lw, linestyle='--')
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('ROC curve of the reduced model')
+    plt.legend(loc="lower right")
+    plt.show()
+
+
+# %%
+plot_roc_auc(fpr, tpr)
 
 # %% [markdown]
 # ## Saving the model and the weights
@@ -347,9 +275,3 @@ model.save('Model_bce_2params.h5')
 
 # %%
 model.save_weights('Weights_bce_2params.h5')
-
-# %% [markdown]
-# ### Loading the model (if needed)
-
-# %%
-model = keras.models.load_model('./Model_lr_bigger.h5', custom_objects={'dice': dice})

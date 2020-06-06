@@ -25,6 +25,7 @@ import cv2 as cv
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+from sklearn.model_selection import train_test_split
 
 # %% [markdown]
 # ## Reading all data
@@ -81,60 +82,90 @@ def make_training_set(filepath):
 # ## Make training set
 
 # %%
-X_train, y_train, names = make_training_set(filepath)
+X, y, names = make_training_set(filepath)
+
 
 # %% [markdown]
 # ## Check the made training sets
 
 # %%
-uniq_X=np.unique(X_train)
+def properties(array):
+    uniq=np.unique(array)
+    print("dtype: "+str(array.dtype))
+    print("size: "+str(array.size))
+    print("shape: "+str(array.shape))
+    print("min: "+str(array.min()))
+    print("max: "+str(array.max()))
+    print("mean: "+str(array.mean()))
+    print("std: "+str(array.std()))
+    print("len(np.unique): "+str(len(uniq)))
+    print("np.unique: ", uniq)
+    pass
+
 
 # %%
-uniq_y=np.unique(y_train)
+properties(X)
 
 # %%
-print("X_train")
-print("dtype: "+str(X_train.dtype))
-print("size: "+str(X_train.size))
-print("shape: "+str(X_train.shape))
-print("min: "+str(X_train.min()))
-print("max: "+str(X_train.max()))
-print("mean: "+str(X_train.mean()))
-print("std: "+str(X_train.std()))
-print("len(np.unique): "+str(len(uniq_X)))
-print("np.unique: ", uniq_X)
+properties(y)
 
-# %%
-print("y_train")
-print("dtype: "+str(y_train.dtype))
-print("size: "+str(y_train.size))
-print("shape: "+str(y_train.shape))
-print("min: "+str(y_train.min()))
-print("max: "+str(y_train.max()))
-print("mean: "+str(y_train.mean()))
-print("std: "+str(y_train.std()))
-print("len(np.unique): "+str(len(uniq_y)))
-print("np.unique: "+str(uniq_y))
 
 # %% [markdown]
 # ### Plotting an example image
 
 # %%
-plt.subplot(121)
-plt.title(names[153])
-plt.imshow(np.squeeze(X_train[153], axis=2))
-plt.subplot(122)
-plt.imshow(np.squeeze(y_train[153], axis=2))
-plt.show()
+def plot(names, X_train, y_train, i):
+    plt.subplot(121)
+    plt.title(names[i])
+    plt.imshow(np.squeeze(X_train[i], axis=2))
+    plt.subplot(122)
+    plt.imshow(np.squeeze(y_train[i], axis=2))
+    plt.show()
+    pass
+
+
+# %%
+plot(names, X, y, 153)
 
 # %% [markdown]
 # ## Writing the data into files
 
-# %%
-np.save('X_train', X_train)
+# %% [markdown]
+# ### Writing the whole dataset into files
 
 # %%
-np.save('y_train', y_train)
+np.save('X_train', X)
+
+# %%
+np.save('y_train', y)
 
 # %%
 np.save('names', names)
+
+# %% [markdown]
+# ### Splitting the dataset into train and test set
+
+# %%
+X_train, X_test, y_train, y_test, train_index, test_index = train_test_split(X, y, names, test_size=0.2)
+
+# %% [markdown]
+# #### Standardize
+
+# %%
+mean = X_train.mean()
+std = X_train.std()
+
+# %%
+X_train = (X_train-mean)/std
+X_test = (X_test-mean)/std
+
+# %% [markdown]
+# ### Fixing the splitted sets for later use
+
+# %%
+np.save('fixed_X_train', X_train)
+np.save("fixed_y_train", y_train)
+np.save("fixed_X_test", X_test)
+np.save("fixed_y_test", y_test)
+np.save("fixed_train_names", train_index)
+np.save("fixed_test_names", test_index)

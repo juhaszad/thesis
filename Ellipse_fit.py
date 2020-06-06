@@ -68,7 +68,7 @@ def get_pixel_size(filename):
 # ## Ellipse fitting and calculation of the HC
 
 # %%
-def EllipseFit():
+def EllipseFit(predictions, pred_names):
     d = dict()
     for i, pred in enumerate(predictions):
         trial = np.squeeze(pred.copy(), axis=2)
@@ -92,7 +92,7 @@ def EllipseFit():
 
 
 # %%
-d = EllipseFit()
+d = EllipseFit(predictions, pred_names)
 
 
 # %% [markdown]
@@ -112,7 +112,7 @@ prop_dict = pd_to_dict(properties)
 
 
 # %%
-def mean_absolute_difference():
+def mean_absolute_difference(d, prop_dict):
     difference = 0
     for filename in list(d.keys()):
         difference += abs(d[filename]-prop_dict[filename])
@@ -120,7 +120,7 @@ def mean_absolute_difference():
 
 
 # %%
-MADF = mean_absolute_difference()
+MADF = mean_absolute_difference(d, prop_dict)
 
 # %%
-MADF
+print("The mean absolute difference measured on the test set is:" + str(MADF))

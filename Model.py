@@ -7,7 +7,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.4.2
+#       jupytext_version: 1.5.0
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -59,7 +59,6 @@ def plot(names, X_train, y_train, i):
     plt.subplot(122)
     plt.imshow(np.squeeze(y_train[i], axis=2))
     plt.show()
-    pass
 
 
 # %%

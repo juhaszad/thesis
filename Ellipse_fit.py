@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.4.2
+#       jupytext_version: 1.5.0
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -41,14 +41,6 @@ properties = pd.read_csv('./training_set_pixel_size_and_HC.csv')
 
 # %% [markdown]
 # ## Define functions for the calculations
-
-# %%
-def calc_HC(a,b,pixel_size):
-    a=a*1.25*pixel_size*0.5
-    b=b*1.25*pixel_size*0.5
-    HC = np.pi*(3*(a+b)-np.sqrt(10*a*b+3*(a**2+b**2)))
-    return HC
-
 
 # %%
 def calc_HC_with_integral(a,b,pixel_size):

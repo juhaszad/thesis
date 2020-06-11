@@ -7,7 +7,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.4.2
+#       jupytext_version: 1.5.0
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -37,11 +37,6 @@ filepath="./Data/"
 height=432
 width=640
 set_size=int(len(os.listdir(filepath))/2)
-
-# %%
-filenames= os.listdir(filepath)
-filenames.sort()
-filenames
 
 
 # %%
@@ -100,7 +95,6 @@ def properties(array):
     print("std: "+str(array.std()))
     print("len(np.unique): "+str(len(uniq)))
     print("np.unique: ", uniq)
-    pass
 
 
 # %%
@@ -108,24 +102,6 @@ properties(X)
 
 # %%
 properties(y)
-
-
-# %% [markdown]
-# ### Plotting an example image
-
-# %%
-def plot(names, X_train, y_train, i):
-    plt.subplot(121)
-    plt.title(names[i])
-    plt.imshow(np.squeeze(X_train[i], axis=2))
-    plt.subplot(122)
-    plt.imshow(np.squeeze(y_train[i], axis=2))
-    plt.show()
-    pass
-
-
-# %%
-plot(names, X, y, 153)
 
 # %% [markdown]
 # ## Writing the data into files
